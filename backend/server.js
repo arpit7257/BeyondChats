@@ -19,6 +19,22 @@ async function loadArticles() {
   }
 }
 
+// Simple helper: read all articles and return object of id => title
+async function fetchArticleTitles() {
+  try {
+    const articles = await loadArticles();
+    const titles = {};
+    articles.forEach((a, i) => {
+      const key = (a && a.id) ? a.id : `idx_${i}`;
+      titles[key] = (a && a.title) ? a.title : '';
+    });
+    return titles;
+  } catch (err) {
+    console.error('fetchArticleTitles error:', err.message);
+    return {};
+  }
+}
+
 // Helper: Save articles to file
 async function saveArticles(articles) {
   await fsPromises.writeFile(STORE_PATH, JSON.stringify(articles, null, 2), 'utf-8');
@@ -139,3 +155,6 @@ app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`Articles stored in: ${STORE_PATH}`);
 });
+
+// Export helper for other modules if needed
+module.exports = { fetchArticleTitles };

@@ -1,4 +1,3 @@
-// minimal shim for `File` used by undici/web fetch in some Node versions
 global.File = global.File || class {};
 const cheerio = require('cheerio');
 
