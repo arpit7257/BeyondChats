@@ -1,6 +1,7 @@
 const express = require('express');
 const fsPromises = require('fs/promises');
 const path = require('path');
+const cors = require('cors');
 
 // Import all pipeline functions
 const { getLast5Urls } = require('./getLast5Urls');
@@ -14,10 +15,12 @@ const app = express();
 const PORT = 5000;
 const STORE_PATH = path.join(process.cwd(), 'tempstore.json');
 
+app.use(cors({ origin: 'http://localhost:5173' }));
+
 // Middleware
 app.use(express.json());
 
-// Helper: Load articles from file
+//Load articles from file
 async function loadArticles() {
   try {
     const data = await fsPromises.readFile(STORE_PATH, 'utf-8');
@@ -27,7 +30,7 @@ async function loadArticles() {
   }
 }
 
-// Simple helper: read all articles and return object of id => title
+//  read all articles and return object of id => title
 async function fetchArticleTitles() {
   try {
     const articles = await loadArticles();
@@ -43,12 +46,12 @@ async function fetchArticleTitles() {
   }
 }
 
-// Helper: Save articles to file
+// Save articles to file
 async function saveArticles(articles) {
   await fsPromises.writeFile(STORE_PATH, JSON.stringify(articles, null, 2), 'utf-8');
 }
 
-// Helper: Create a new article
+// Create a new article
 async function createArticle(articleData) {
   const { title, author, date, content, url } = articleData;
   
@@ -100,6 +103,30 @@ app.get('/api/articles/:id', async (req, res) => {
     }
     
     res.json({ success: true, data: article });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 2.5. READ articles by TITLE (case-insensitive search)
+app.get('/api/articles/search/:title', async (req, res) => {
+  try {
+    const titleQuery = decodeURIComponent(req.params.title);
+    
+    if (!titleQuery) {
+      return res.status(400).json({ success: false, error: 'Title parameter is required' });
+    }
+    
+    const articles = await loadArticles();
+    const matchedArticles = articles.filter(a => 
+      a.title && a.title.toLowerCase().includes(titleQuery.toLowerCase())
+    );
+    
+    if (matchedArticles.length === 0) {
+      return res.status(404).json({ success: false, error: 'No articles found with that title' });
+    }
+    
+    res.json({ success: true, count: matchedArticles.length, data: matchedArticles });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

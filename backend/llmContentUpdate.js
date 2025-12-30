@@ -10,7 +10,7 @@ const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const SIMILAR_CONTENT_PATH = path.join(process.cwd(), 'contentOfSimilarArticle.json');
 const FINAL_CONTENT_PATH = path.join(process.cwd(), 'finalContent.json');
 
-// --- HELPER: Sleep ---
+// --- Sleep ---
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // --- LOADER ---
@@ -68,13 +68,11 @@ async function callGroqLLM(prompt) {
             { role: 'user', content: prompt }
           ],
           temperature: 0.6,
-          // FIX 2: Reduced output tokens to fit combined TPM limit
-          // 1500 tokens is plenty for a blog post (~1000 words)
           max_tokens: 1500 
         })
       });
 
-      // FIX 3: Parse error body to see WHY it failed
+      //  Parse error body to see WHY it failed
       if (!response.ok) {
         const errorBody = await response.text(); 
         
@@ -152,7 +150,5 @@ async function enhancePipeline() {
   console.log(`\nSuccess! Saved ${finalResults.length} articles to finalContent.json`);
   return finalResults;
 }
-
-module.exports = { enhancePipeline };
 
 module.exports = { enhancePipeline };

@@ -7,7 +7,7 @@ const STORE_PATH = path.join(process.cwd(), 'tempstore.json');
 
 chromium.use(stealth);
 
-// Helper: Load articles directly from tempstore.json
+// Load articles directly from tempstore.json
 async function loadArticles() {
   try {
     const data = await fsPromises.readFile(STORE_PATH, 'utf-8');
@@ -30,7 +30,7 @@ async function searchDuckDuckGo() {
         const page = await context.newPage();
 
         try {
-            console.log(`🔍 Searching DDG for: "${title}"`);
+            console.log(` Searching DDG for: "${title}"`);
             
             // Go to DuckDuckGo
             await page.goto(`https://duckduckgo.com/?q=${encodeURIComponent(title)}&t=h_&ia=web`, { waitUntil: 'domcontentloaded' });

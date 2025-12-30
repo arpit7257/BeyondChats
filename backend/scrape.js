@@ -17,10 +17,10 @@ async function scrapeArticle(articleUrl) {
         const date = $('.elementor-post-info__item--type-date time').text().trim();
 
         // 2. Extract Article Content
-        // We target the main content container and exclude shared widgets/social buttons
+
         const contentSelector = '.elementor-widget-theme-post-content';
         
-        // Remove unwanted elements inside the content (social placeholders, etc.)
+        // Remove unwanted elements inside the content
         $(contentSelector).find('.has-social-placeholder, script, style').remove();
 
         const fullText = [];

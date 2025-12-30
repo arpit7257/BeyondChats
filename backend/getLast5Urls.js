@@ -16,7 +16,7 @@ async function getLast5Urls() {
             if (href) urls.push(href);
         });
 
-        // Return the last 5 URLs (or fewer if not available)
+        // Return the last 5 URLs
         return urls.slice(-5);
     } catch (err) {
         console.error('getLast5Urls error:', err);
