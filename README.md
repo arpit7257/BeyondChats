@@ -1,8 +1,4 @@
-This is a comprehensive and high-impact README designed to impress evaluators. It highlights your technical depth, the complexity of the pipeline you've built, and provides clear instructions for anyone reviewing your work.
-
----
-
-# AI-Powered Content Intelligence & Enhancement Pipeline
+# BeyondChats Blog scraper and enhancer with AI for beter SEO
 
 An automated end-to-end system that scrapes legacy blog content, performs competitive research via search engines, and leverages Large Language Models (LLMs) to reformat and enhance articles for better readability and SEO alignment.
 
