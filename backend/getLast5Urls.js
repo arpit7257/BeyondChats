@@ -24,4 +24,4 @@ async function getLast5Urls() {
     }
 }
 
-module.exports = getLast5Urls;
+module.exports = { getLast5Urls };

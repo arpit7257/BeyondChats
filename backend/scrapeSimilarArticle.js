@@ -1,7 +1,11 @@
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 const fs = require('fs');
+const fsPromises = require('fs/promises');
+const path = require('path');
 const { searchDuckDuckGo } = require('./searchSimilarArticle');
+
+const SIMILAR_CONTENT_PATH = path.join(process.cwd(), 'contentOfSimilarArticle.json');
 
 async function scrapeTextFromUrl(url) {
   const response = await fetch(url);
@@ -22,6 +26,7 @@ async function scrapeAllRelatedArticles() {
   for (const item of finalResults) {
     const articleContent = {
       title: item.title,
+      "relaed link": item.related,
       related: []
     };
 
@@ -39,11 +44,9 @@ async function scrapeAllRelatedArticles() {
     contentOfSimilarArticles.push(articleContent);
   }
 
-  fs.writeFileSync('contentOfSimilarArticle.json', JSON.stringify(contentOfSimilarArticles, null, 2));
-  console.log('✅ Saved to contentOfSimilarArticle.json');
+  await fsPromises.writeFile(SIMILAR_CONTENT_PATH, JSON.stringify(contentOfSimilarArticles, null, 2), 'utf-8');
+  console.log('Saved to contentOfSimilarArticle.json');
+  return contentOfSimilarArticles;
 }
 
-// Run it
-scrapeAllRelatedArticles();
-
-module.exports = { scrapeTextFromUrl };
+module.exports = { scrapeTextFromUrl, scrapeAllRelatedArticles };

@@ -2,6 +2,14 @@ const express = require('express');
 const fsPromises = require('fs/promises');
 const path = require('path');
 
+// Import all pipeline functions
+const { getLast5Urls } = require('./getLast5Urls');
+const { scrapeArticle } = require('./scrape');
+const { searchDuckDuckGo } = require('./searchSimilarArticle');
+const { scrapeAllRelatedArticles } = require('./scrapeSimilarArticle');
+const { enhancePipeline } = require('./llmContentUpdate');
+const { postArticlesToServer: postArticlesToServerFunc } = require('./postFinalContent');
+
 const app = express();
 const PORT = 5000;
 const STORE_PATH = path.join(process.cwd(), 'tempstore.json');
@@ -40,6 +48,30 @@ async function saveArticles(articles) {
   await fsPromises.writeFile(STORE_PATH, JSON.stringify(articles, null, 2), 'utf-8');
 }
 
+// Helper: Create a new article
+async function createArticle(articleData) {
+  const { title, author, date, content, url } = articleData;
+  
+  if (!title) {
+    throw new Error('Title is required');
+  }
+  
+  const newArticle = {
+    id: Date.now() + Math.random(),
+    title,
+    author: author || '',
+    date: date || new Date().toLocaleDateString(),
+    content: content || '',
+    url: url || ''
+  };
+  
+  const articles = await loadArticles();
+  articles.push(newArticle);
+  await saveArticles(articles);
+  
+  return newArticle;
+}
+
 // Basic route
 app.get('/', (req, res) => {
   res.json({ message: 'BeyondChats Articles API' });
@@ -76,25 +108,7 @@ app.get('/api/articles/:id', async (req, res) => {
 // 3. CREATE ONE article
 app.post('/api/articles', async (req, res) => {
   try {
-    const { title, author, date, content, url } = req.body;
-    
-    if (!title) {
-      return res.status(400).json({ success: false, error: 'Title is required' });
-    }
-    
-    const newArticle = {
-      id: Date.now() + Math.random(),
-      title,
-      author: author || '',
-      date: date || new Date().toLocaleDateString(),
-      content: content || '',
-      url: url || ''
-    };
-    
-    const articles = await loadArticles();
-    articles.push(newArticle);
-    await saveArticles(articles);
-    
+    const newArticle = await createArticle(req.body);
     res.status(201).json({ success: true, data: newArticle });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -150,11 +164,62 @@ app.delete('/api/articles', async (req, res) => {
   }
 });
 
+// ========== INTEGRATED PIPELINE ==========
+// Main pipeline: orchestrates all functions in order
+async function runFullPipeline() {
+  try {
+    console.log('\n\n========== STARTING FULL PIPELINE ==========\n');
+
+    // Step 1: Get last 5 URLs
+    console.log('Step 1: Getting last 5 URLs...');
+    const urls = await getLast5Urls();
+    console.log(`Found ${urls.length} URLs\n`);
+
+    // Step 2: Scrape articles from those URLs
+    console.log('Step 2: Scraping articles...');
+    const articles = [];
+    for (const url of urls) {
+      const article = await scrapeArticle(url);
+      articles.push(article);
+    }
+    await saveArticles(articles);
+    console.log(`Scraped ${articles.length} articles to tempstore.json\n`);
+
+    // Step 3: Search for similar articles
+    console.log('Step 3: Searching for similar articles on DuckDuckGo...');
+    const similarResults = await searchDuckDuckGo();
+    console.log(`Found similar articles\n`);
+
+    // Step 4: Scrape all related articles
+    console.log('Step 4: Scraping related articles...');
+    await scrapeAllRelatedArticles();
+    console.log(`Scraped related articles to contentOfSimilarArticle.json\n`);
+
+    // Step 5: Enhance content with LLM
+    console.log('Step 5: Enhancing content with LLM...');
+    await enhancePipeline();
+    console.log(`Generated enhanced content to finalContent.json\n`);
+
+    // Step 6: Post articles to server
+    console.log('Step 6: Posting articles to database...');
+    await postArticlesToServerFunc(createArticle);
+    console.log(`Articles posted to server\n`);
+
+    console.log('========== PIPELINE COMPLETED SUCCESSFULLY ==========\n');
+  } catch (err) {
+    console.error(' PIPELINE ERROR:', err.message);
+  }
+}
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`Articles stored in: ${STORE_PATH}`);
+  
+  // Automatically run the full pipeline when server starts
+  console.log('\nInitializing full pipeline...');
+  runFullPipeline();
 });
 
 // Export helper for other modules if needed
-module.exports = { fetchArticleTitles };
+module.exports = { fetchArticleTitles, createArticle, loadArticles, saveArticles };

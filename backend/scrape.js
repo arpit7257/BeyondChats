@@ -2,7 +2,7 @@ global.File = global.File || class {};
 const cheerio = require('cheerio');
 const fsPromises = require('fs/promises');
 const path = require('path');
-const getLast5Urls = require('./getLast5Urls');
+const { getLast5Urls } = require('./getLast5Urls');
 
 const STORE_PATH = path.join(process.cwd(), 'tempstore.json');
 

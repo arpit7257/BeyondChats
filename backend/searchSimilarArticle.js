@@ -1,12 +1,25 @@
 const { chromium } = require('playwright-extra');
 const stealth = require('puppeteer-extra-plugin-stealth')();
-const { fetchArticleTitles } = require('./server'); // Keep your existing import
+const fsPromises = require('fs/promises');
+const path = require('path');
+
+const STORE_PATH = path.join(process.cwd(), 'tempstore.json');
 
 chromium.use(stealth);
 
+// Helper: Load articles directly from tempstore.json
+async function loadArticles() {
+  try {
+    const data = await fsPromises.readFile(STORE_PATH, 'utf-8');
+    return JSON.parse(data);
+  } catch (err) {
+    return [];
+  }
+}
+
 async function searchDuckDuckGo() {
-    const titlesObj = await fetchArticleTitles();
-    const titles = Object.values(titlesObj || {}).filter(t => !!t);
+    const articles = await loadArticles();
+    const titles = articles.map(a => a.title).filter(t => !!t);
     const finalResults = [];
 
     const browser = await chromium.launch({ headless: true });
@@ -32,10 +45,10 @@ async function searchDuckDuckGo() {
             });
 
             finalResults.push({ title, related: links });
-            console.log(`✅ Found: ${links.length} links`);
+            console.log(`Found: ${links.length} links`);
 
         } catch (e) {
-            console.log(`❌ Failed: ${title}`);
+            console.log(`Failed: ${title}`);
             finalResults.push({ title, related: [] });
         }
 
